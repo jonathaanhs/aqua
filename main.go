@@ -28,11 +28,11 @@ func initConfig() {
 
 	if viper.GetBool("debug") {
 		logrus.SetLevel(logrus.DebugLevel)
-		logrus.Warn("Comment service is Running in Debug Mode")
+		logrus.Warn("Service is Running in Debug Mode")
 		return
 	}
 	logrus.SetLevel(logrus.InfoLevel)
-	logrus.Warn("Comment service is Running in Production Mode")
+	logrus.Warn("Service is Running in Production Mode")
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 }
 
@@ -56,6 +56,9 @@ func main() {
 	db.SetMaxIdleConns(10)
 	db.SetConnMaxLifetime(time.Minute * 10)
 
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
 	handler := httpHandler.InitArticle(db)
 	echoServer := echo.New()
 

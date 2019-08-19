@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/bxcodec/aqua/models"
@@ -52,16 +53,20 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		}
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
+	authorIDs := []string{}
+	for _, item := range data {
+		authorIDs = append(authorIDs, item.Author.ID)
+	}
+
+	authors, err := h.getAuthorByIDs(authorIDs)
+	if err != nil {
+		return
+	}
 
 	for i, item := range data {
-		author, er := h.getAuthorByID(item.Author.ID)
-		if er != nil {
-			resp := ErroResponse{
-				Message: er.Error(),
-			}
-			return c.JSON(http.StatusInternalServerError, resp)
+		if author, ok := authors[item.Author.ID]; ok {
+			data[i].Author = author
 		}
-		data[i].Author = author
 	}
 
 	c.Response().Header().Set("X-Cursor", nextCsr)
@@ -118,5 +123,27 @@ func (h ArticleHandler) getAuthorByID(authorID string) (res models.Author, err e
 		&res.ID,
 		&res.Name,
 	)
+	return
+}
+
+func (h ArticleHandler) getAuthorByIDs(authorIDs []string) (res map[string]models.Author, err error) {
+	query := `SELECT id, name FROM authors WHERE id IN (?)`
+	rows, err := h.DB.Query(query, strings.Join(authorIDs, ","))
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	res = make(map[string]models.Author, 0)
+	for rows.Next() {
+		var author models.Author
+		err = rows.Scan(
+			&author.ID,
+			&author.Name,
+		)
+		if err != nil {
+			return
+		}
+		res[author.ID] = author
+	}
 	return
 }
