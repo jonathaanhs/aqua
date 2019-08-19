@@ -9,6 +9,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/bxcodec/aqua/models"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/sync/errgroup"
 )
 
 // ErroResponse ...
@@ -53,15 +54,26 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
+	g, _ := errgroup.WithContext(c.Request().Context())
+
 	for i, item := range data {
-		author, er := h.getAuthorByID(item.Author.ID)
-		if er != nil {
-			resp := ErroResponse{
-				Message: er.Error(),
+		i, item := i, item
+		g.Go(func() (err error) {
+			author, err := h.getAuthorByID(item.Author.ID)
+			if err != nil {
+				return
 			}
-			return c.JSON(http.StatusInternalServerError, resp)
+			data[i].Author = author
+			return
+		})
+	}
+
+	err = g.Wait()
+	if err != nil {
+		resp := ErroResponse{
+			Message: err.Error(),
 		}
-		data[i].Author = author
+		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
 	c.Response().Header().Set("X-Cursor", nextCsr)
