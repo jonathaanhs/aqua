@@ -16,30 +16,6 @@ import (
 	_ "net/http/pprof" // import for profiling
 )
 
-func initConfig() {
-	viper.SetConfigType("toml")
-	viper.SetConfigFile("config.toml")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	logrus.Info("Using Config file: ", viper.ConfigFileUsed())
-
-	if viper.GetBool("debug") {
-		logrus.SetLevel(logrus.DebugLevel)
-		logrus.Warn("Comment service is Running in Debug Mode")
-		return
-	}
-	logrus.SetLevel(logrus.InfoLevel)
-	logrus.Warn("Comment service is Running in Production Mode")
-	logrus.SetFormatter(&logrus.JSONFormatter{})
-}
-
-func init() {
-	initConfig()
-}
-
 func main() {
 	dbHost := viper.GetString("mysql.host")
 	dbPort := viper.GetString("mysql.port")
@@ -77,4 +53,28 @@ func main() {
 	for {
 		log.Fatal(<-errCh)
 	}
+}
+
+func initConfig() {
+	viper.SetConfigType("toml")
+	viper.SetConfigFile("config.toml")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logrus.Info("Using Config file: ", viper.ConfigFileUsed())
+
+	if viper.GetBool("debug") {
+		logrus.SetLevel(logrus.DebugLevel)
+		logrus.Warn("Comment service is Running in Debug Mode")
+		return
+	}
+	logrus.SetLevel(logrus.InfoLevel)
+	logrus.Warn("Comment service is Running in Production Mode")
+	logrus.SetFormatter(&logrus.JSONFormatter{})
+}
+
+func init() {
+	initConfig()
 }
