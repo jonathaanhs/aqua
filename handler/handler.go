@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/bxcodec/aqua/models"
@@ -54,7 +55,7 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 	}
 
 	g, _ := errgroup.WithContext(c.Request().Context())
-
+	mutex := sync.Mutex{}
 	for i, item := range data {
 		i, item := i, item
 		g.Go(func() (err error) {
@@ -62,7 +63,9 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 			if err != nil {
 				return
 			}
+			mutex.Lock()
 			data[i].Author = author
+			mutex.Unlock()
 			return
 		})
 	}
