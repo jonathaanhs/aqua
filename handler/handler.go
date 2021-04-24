@@ -52,15 +52,22 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
-	for i, item := range data {
-		author, er := h.getAuthorByID(item.Author.ID)
-		if er != nil {
-			resp := ErroResponse{
-				Message: er.Error(),
-			}
-			return c.JSON(http.StatusInternalServerError, resp)
+	authorIDs := []string{}
+
+	for _, item := range data {
+		authorIDs = append(authorIDs, item.Author.ID)
+	}
+
+	authors, err := h.getAuthorByIDs(authorIDs)
+	if err != nil {
+		resp := ErroResponse{
+			Message: err.Error(),
 		}
-		data[i].Author = author
+		return c.JSON(http.StatusInternalServerError, resp)
+	}
+
+	for i, item := range data {
+		data[i].Author = authors[item.Author.ID]
 	}
 
 	return c.JSON(http.StatusOK, data)
@@ -109,12 +116,33 @@ func (h ArticleHandler) fetchArticles(limit int64, authorID string) (res []model
 	return
 }
 
-func (h ArticleHandler) getAuthorByID(authorID string) (res models.Author, err error) {
-	query := `SELECT id, name FROM authors WHERE id=?`
-	row := h.DB.QueryRow(query, authorID)
-	err = row.Scan(
-		&res.ID,
-		&res.Name,
-	)
+func (h ArticleHandler) getAuthorByIDs(authorIDs []string) (res map[string]models.Author, err error) {
+	queryBuilder := squirrel.Select("id", "name").From("authors").
+		Where(squirrel.Eq{
+			"id": authorIDs,
+		})
+
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return
+	}
+
+	rows, err := h.DB.Query(query, args...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	res = make(map[string]models.Author)
+	for rows.Next() {
+		var author models.Author
+		err = rows.Scan(
+			&author.ID,
+			&author.Name,
+		)
+		if err != nil {
+			return
+		}
+		res[author.ID] = author
+	}
 	return
 }
