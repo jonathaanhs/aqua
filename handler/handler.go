@@ -31,7 +31,6 @@ func InitArticle(db *sql.DB) ArticleHandler {
 // FetchArticles ...
 func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 	authorID := c.QueryParam("author_id")
-	csr := c.QueryParam("cursor")
 	limit := c.QueryParam("limit")
 
 	limitNumber := int64(20) // default
@@ -45,7 +44,7 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		}
 	}
 
-	data, nextCsr, err := h.fetchArticles(limitNumber, csr, authorID)
+	data, err := h.fetchArticles(limitNumber, authorID)
 	if err != nil {
 		resp := ErroResponse{
 			Message: err.Error(),
@@ -64,12 +63,11 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		data[i].Author = author
 	}
 
-	c.Response().Header().Set("X-Cursor", nextCsr)
 	return c.JSON(http.StatusOK, data)
 }
 
-func (h ArticleHandler) fetchArticles(limit int64, cursor string, authorID string) (res []models.Article, nextCsr string, err error) {
-	queryBuilder := squirrel.Select("id", "title", "content", "author_id").From("articles")
+func (h ArticleHandler) fetchArticles(limit int64, authorID string) (res []models.Article, err error) {
+	queryBuilder := squirrel.Select("id", "title", "body", "author_id").From("articles")
 	queryBuilder = queryBuilder.Limit(uint64(limit))
 
 	if authorID != "" {
