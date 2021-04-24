@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/bxcodec/aqua/models"
 	"github.com/labstack/echo/v4"
+	"golang.org/x/sync/errgroup"
 )
 
 // ErroResponse ...
@@ -52,15 +54,28 @@ func (h ArticleHandler) FetchArticles(c echo.Context) (err error) {
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
+	g, _ := errgroup.WithContext(c.Request().Context())
+	mutex := sync.Mutex{}
 	for i, item := range data {
-		author, er := h.getAuthorByID(item.Author.ID)
-		if er != nil {
-			resp := ErroResponse{
-				Message: er.Error(),
+		i, item := i, item
+		g.Go(func() (err error) {
+			author, er := h.getAuthorByID(item.Author.ID)
+			if er != nil {
+				return er
 			}
-			return c.JSON(http.StatusInternalServerError, resp)
+			mutex.Lock()
+			data[i].Author = author
+			mutex.Unlock()
+			return nil
+		})
+	}
+
+	err = g.Wait()
+	if err != nil {
+		resp := ErroResponse{
+			Message: fmt.Sprintf("Failed when fetching the author's detail. Got Err: %s", err.Error()),
 		}
-		data[i].Author = author
+		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
 	return c.JSON(http.StatusOK, data)
