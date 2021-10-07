@@ -10,21 +10,21 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	_ "github.com/go-sql-driver/mysql" //import for mysql driver
 	"github.com/labstack/echo/v4"
+	_ "github.com/lib/pq" //import for postgres driver
 
 	_ "net/http/pprof" // import for profiling
 )
 
 func main() {
-	dbHost := viper.GetString("mysql.host")
-	dbPort := viper.GetString("mysql.port")
-	dbUser := viper.GetString("mysql.user")
-	dbPass := viper.GetString("mysql.pass")
-	dbName := viper.GetString("mysql.name")
-	dsn := dbUser + `:` + dbPass + `@tcp(` + dbHost + `:` + dbPort + `)/` + dbName + `?parseTime=1&loc=Asia%2FJakarta`
-
-	db, err := sql.Open("mysql", dsn)
+	dbHost := viper.GetString("postgres.host")
+	dbPort := viper.GetString("postgres.port")
+	dbUser := viper.GetString("postgres.user")
+	dbPass := viper.GetString("postgres.pass")
+	dbName := viper.GetString("postgres.name")
+	// dsn := dbUser + `:` + dbPass + `@tcp(` + dbHost + `:` + dbPort + `)/` + dbName + `?sslmode=disable`
+	dsn := "postgresql://" + dbUser + ":" + dbPass + "@" + dbHost + ":" + dbPort + "/" + dbName + "?sslmode=disable"
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
