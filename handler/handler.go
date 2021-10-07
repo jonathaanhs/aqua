@@ -125,7 +125,7 @@ func (h ArticleHandler) fetchArticles(limit int64, authorID string) (res []model
 }
 
 func (h ArticleHandler) getAuthorByID(authorID string) (res models.Author, err error) {
-	query := `SELECT id, name FROM authors WHERE id=?`
+	query := `SELECT id, name FROM authors WHERE id=$1`
 	row := h.DB.QueryRow(query, authorID)
 	err = row.Scan(
 		&res.ID,
