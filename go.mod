@@ -10,4 +10,5 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.4.0
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 )
