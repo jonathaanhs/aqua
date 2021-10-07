@@ -1,17 +1,13 @@
-version: "3.8"
+version: "3.9"
+
 services:
-  mysql:
-    image: mysql:5.7 
-    container_name: menekel_mysql
-    command: mysqld --user=root
+  aqua_pprof_postgres:
+    container_name: aqua_pprof_postgres
+    image: postgres:alpine
+    restart: unless-stopped
     ports:
-      - 3306:3306
+      - 5432:5432
     environment:
-      - MYSQL_DATABASE=article
-      - MYSQL_USER=user
-      - MYSQL_PASSWORD=password
-      - MYSQL_ROOT_PASSWORD=root
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 5s
-      retries: 10
+      POSTGRES_DB: aqua_pprof_database
+      POSTGRES_USER: aqua_pprof_username
+      POSTGRES_PASSWORD: aqua_pprof_password
